@@ -67,3 +67,24 @@
     (is (thrown? Exception (w/markup [:span {:forground "#fff"} "x"]))))
   (testing "attributes on an attribute-less tag like <b> throw"
     (is (thrown? Exception (w/markup [:b {:weight "bold"} "x"])))))
+
+;; props-to-patch: what a re-render sets, given the last render's props.
+(deftest props-to-patch-sets-only-what-changed
+  (testing "unchanged props are left alone, so user edits survive a re-render"
+    (is (= {} (w/props-to-patch {:text "a" :placeholder "p"} {:text "a" :placeholder "p"}))))
+  (testing "a changed value is set"
+    (is (= {:text "b"} (w/props-to-patch {:text "a" :placeholder "p"} {:text "b" :placeholder "p"}))))
+  (testing "a new prop is set"
+    (is (= {:sensitive false} (w/props-to-patch {:text "a"} {:text "a" :sensitive false})))))
+
+(deftest props-to-patch-resends-linked-props-together
+  (testing "a window's size"
+    (is (= {:width 300 :height 200} (w/props-to-patch {:width 200 :height 200 :title "t"}
+                                                      {:width 300 :height 200 :title "t"}))))
+  (testing "the margins: a side overrides :margin, so both go"
+    (is (= {:margin 4 :margin-start 8} (w/props-to-patch {:margin 2 :margin-start 8}
+                                                          {:margin 4 :margin-start 8}))))
+  (testing "the size request"
+    (is (= {:width-request 10 :height-request 20}
+           (w/props-to-patch {:width-request 5 :height-request 20}
+                             {:width-request 10 :height-request 20})))))

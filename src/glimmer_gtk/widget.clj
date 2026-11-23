@@ -11,6 +11,7 @@
   over reactive cells (not values), so the first render's closure stays correct
   for the widget's life, exactly like reagent."
   (:require [clojure.string :as str]
+            [glimmer.backend :as b]
             [glimmer-gtk.ffi :as g]
             [glimmer-gtk.genum :as genum]
             [hiccup2.core :as hiccup]
@@ -381,8 +382,11 @@
   (when-let [a (:valign props)] (g/gtk-widget-set-valign widget (->enum "GtkAlign" a)))
   (when (contains? props :hexpand) (g/gtk-widget-set-hexpand widget (->bool (:hexpand props))))
   (when (contains? props :vexpand) (g/gtk-widget-set-vexpand widget (->bool (:vexpand props))))
-  (when-let [w (:width-request props)]  (g/gtk-widget-set-size-request widget (int w) -1))
-  (when-let [h (:height-request props)] (g/gtk-widget-set-size-request widget -1 (int h))))
+  ;; one call for both: setting one with -1 for the other would undo the other
+  (when (or (:width-request props) (:height-request props))
+    (g/gtk-widget-set-size-request widget
+                                   (int (or (:width-request props) -1))
+                                   (int (or (:height-request props) -1)))))
 
 ;; --- public create / patch ---------------------------------------------------
 (defn create!
@@ -409,6 +413,34 @@
                                  (with-orientation tag props)))]
     ((:apply (spec-for tag)) widget applied)
     (apply-widget-props! widget applied)))
+
+(def ^:private linked-props
+  "Props one GTK setter takes together, so a change to one re-sends the rest:
+  a window's default size, the margins (:margin sets all four sides, the sides
+  then override it) and the size request."
+  [[:width :height]
+   [:margin :margin-start :margin-end :margin-top :margin-bottom]
+   [:width-request :height-request]])
+
+(defn props-to-patch
+  "The props a re-render has to set, given the props the last render applied:
+  those whose value changed, plus the rest of any linked group one of them is in.
+  An unchanged prop is left alone, so an entry's :text or a checkbutton's
+  :active the user has edited is only overwritten when the app's value actually
+  changes, never by a re-render that repeats the old one."
+  [old-props new-props]
+  (let [changed (b/changed-props old-props new-props)]
+    (reduce (fn [m group]
+              (if (some #(contains? m %) group)
+                (merge m (select-keys new-props group))
+                m))
+            changed linked-props)))
+
+(defn patch-props!
+  "The backend's :patch-props!: apply only what changed since the last render
+  (see props-to-patch)."
+  [tag widget old-props new-props]
+  (apply-props! tag widget (props-to-patch old-props new-props)))
 
 (defn show!
   "Make a widget visible. GTK4 widgets default to visible, but setting it
