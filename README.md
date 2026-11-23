@@ -95,11 +95,17 @@ idiomatic keywords at runtime (see [Enum constants](#enum-constants) below):
 - `:on-activate` — entry activated (Enter). Handler takes no args.
 - `:on-toggled` — checkbutton toggled. Handler takes no args.
 
-Signals are connected once at mount. Handlers should close over reactive cells
-(not values), so the first render's closure stays correct for the widget's life.
+Signals are connected once at mount, to a handler glimmer keeps pointing at the
+latest render's.
 A programmatic prop change (setting `:text` on an entry, `:active` on a
 checkbutton) suppresses the signal GTK emits for it, so a re-render can't feed
 back into its own handler.
+
+A re-render sets only the props that changed since the last one, so an entry's
+`:text` or a checkbutton's `:active` is written only when the app's value
+changes, never by a re-render that repeats the old value over what the user has
+since typed or clicked. Handlers follow the latest render (glimmer 0.2), so they
+may close over plain values.
 
 ## Pango markup
 

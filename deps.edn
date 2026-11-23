@@ -8,8 +8,7 @@
  ;; hiccup is used to serialize Pango markup data ([:span {...} "text"]) for a
  ;; label's :markup prop.
  :deps {jolt-lang/glimmer {:git/url "https://github.com/jolt-lang/glimmer"
-                           :git/tag "v0.1.8"
-                           :git/sha "7f00d14d1b3c6239638d03780006c4a76fca379f"}
+                           :git/sha "7b3ceb4d8c04200509b351db8ebb4aaf2be7371e"}
         weavejester/hiccup
         {:git/url "https://github.com/weavejester/hiccup"
          :git/sha "b6b12097ba973141fe87c1b4d6a27ddcce5d5929"}}
