@@ -19,6 +19,9 @@
   hands it to the reconciler to mount into; g_application_run then blocks running
   the GTK main loop, and every signal/activate callback is a :collect-safe
   foreign-callable."
+  ;; run! below is the backend's :run, private to this namespace; it shadows
+  ;; clojure.core/run!, which nothing here uses
+  (:refer-clojure :exclude [run!])
   (:require [glimmer.backend :as b]
             [glimmer-gtk.ffi :as g]
             [glimmer-gtk.widget :as w]
